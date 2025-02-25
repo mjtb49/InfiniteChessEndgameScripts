@@ -520,6 +520,22 @@ def get_potential_ArHa_traps(n):
     return potential_trap_positions
 
 
+def get_potential_BHa_traps(n):
+    coordinates1 = [(n, 0), (-n, 0), (0, n), (0, -n)]
+    coordinates2 = [(a, b) for a in range(-n-1, n+2) for b in range(-n, n+2) if l1_norm((a, b)) <= n+7]
+    king_coordinates = [(a, b) for a in range(-n, n+1) for b in range(-n, n+1) if l1_norm((a, b)) < n]
+    potential_trap_positions = {(a, b, c) for a in king_coordinates for b in coordinates1 for c in coordinates2}
+    return potential_trap_positions
+
+
+def get_potential_NHa_traps(n):
+    knight = [(a, b) for a in range(-n-1, n+2) for b in range(-n, n+2) if knight_norm((a, b)) <= n//2]
+    hawk = [(a, b) for a in range(-n-1, n+2) for b in range(-n, n+2) if inf_norm((a, b)) <= n]
+    king_coordinates = [(a, b) for a in range(-n, n+1) for b in range(-n, n+1) if inf_norm((a, b)) < n]
+    potential_trap_positions = {(a, b, c) for a in king_coordinates for b in knight for c in hawk}
+    return potential_trap_positions
+
+
 def get_potential_nbb_traps(n, knight_bound, edge_size):
     print(f"{n} {knight_bound} {edge_size}")
     if CORNER_MODE:
@@ -552,6 +568,60 @@ def get_potential_nbb_traps(n, knight_bound, edge_size):
     return potential_trap_positions
 
 
+# def get_potential_rectangular_nbb_traps(n, m, knight_bound, edge_size):
+#     print(f"{n} {knight_bound} {edge_size}")
+#     assert n >= m and n % 2 == m % 2
+#     if CORNER_MODE:
+#         print(f"Warning idiot this is the version with the black king clamped above y = {CORNER_BOUND}")
+#
+#     # x + y = n
+#     # x - y = m
+#     # x = (n + m)//2
+#     # y = (n - m)//2
+#     special_bishops = [((s1 * n + s2 * m)//2, (s1 * n - s2 * m)//2) for s1 in [-1, 1] for s2 in [-1, 1]]
+#     bishop_1 = [(a, n-a) for a in range()] + [(a, -n - a) for a in range()] + special_bishops
+#     bishop_2 = [(a, a - m) for a in range()] + [(a, a + m) for a in range()] + special_bishops
+#
+#     all_bishops = [(a, b) for a in bishop_1 for b in bishop_2 if len((set(a) | set(b)).intersection({n, -n, n - 1, 1 - n})) > 0]
+#     bishops_corner = [(a, b) for a in bishop_1 for b in bishop_2 if len(set(a).intersection({n, -n})) > 0 and len(set(b).intersection({n, -n})) > 0]
+#
+#     # print_all_coords([p[0] for p in all_bishops])
+#     # print_all_coords([p[1] for p in all_bishops])
+#     # print_all_coords([p[0] for p in bishops_corner] )
+#     # print_all_coords([p[1] for p in bishops_corner] )
+#
+#     knight = [(a, b) for a in range(CORNER_BOUND if CORNER_MODE else -n-3, n+4) for b in range(-n-3, n+4) if l1_norm((a, b)) <= n + 3]
+#     # print(knight)
+#     # print_all_coords(knight)
+#
+#     edge_king_coordinates = [(a, b) for a in range(CORNER_BOUND if CORNER_MODE else -n, n + 1) for b in range(-n, n + 1) if n - edge_size <= l1_norm((a, b)) <= n]
+#     # print_all_coords(edge_king_coordinates)
+#     center_king_coordinates = [(a, b) for a in range(CORNER_BOUND if CORNER_MODE else -n, n + 1) for b in range(-n, n + 1) if l1_norm((a, b)) < n-edge_size]
+#     # print_all_coords(center_king_coordinates)
+#     # print_all_coords([(x, y) for x in range(-n, n) for y in range(-n, n) if dist((x, y), (0, 0), knight_norm) <= knight_bound])
+#     potential_trap_positions = {(a, b) + c for a in center_king_coordinates for b in knight for c in bishops_corner if dist(a, b, knight_norm) < knight_bound}
+#     potential_trap_positions.update({(a, b) + c for a in edge_king_coordinates for b in knight for c in all_bishops if dist(a, b, knight_norm) < knight_bound})
+#
+#     return potential_trap_positions
+
+
+
+def get_potential_an_traps(n):
+    king = [(a, b) for a in range(CORNER_BOUND if CORNER_MODE else -n, n + 1) for b in range(-n, n + 1) if
+            l1_norm((a, b)) <= n]
+    arch = [(a, b) for a in range(CORNER_BOUND if CORNER_MODE else -n - 3, n + 4) for b in range(-n - 3, n + 4) if
+            n-3 <= l1_norm((a, b)) <= n + 3]
+    knight = [(a, b) for a in range(CORNER_BOUND if CORNER_MODE else -n - 3, n + 4) for b in range(-n - 3, n + 4) if
+            l1_norm((a, b)) <= n + 3]
+
+    print_all_coords(king)
+    print_all_coords(arch)
+    print_all_coords(knight)
+
+    return {(a, b, c) for a in king for b in arch for c in knight}
+
+
+
 def save_trap(trap, path):
     with open(path, 'w') as f:
         f.write(str(trap))
@@ -561,23 +631,6 @@ def load_trap(path):
     with open(path, 'r') as f:
         return ast.literal_eval(f.read())
 
-# def get_potential_nbb_corners(n):
-#     bishop_1 = [(a, b) for a in range(0, n + 1) for b in range(-n, n + 1) if a + b in {n + 1, -n - 1}] + [(1-n, 0),(n - 1, 0),(0, 1 - n),(0, n - 1)]
-#     bishop_2 = [(a, b) for a in range(0, n + 1) for b in range(-n, n + 1) if a - b in {n + 1, -n - 1}] + [(1-n, 0),(n - 1, 0),(0, 1 - n),(0, n - 1)]
-#
-#     all_bishops = [(a, b) for a in bishop_1 for b in bishop_2 if len((set(a) | set(b)).intersection({n, -n, n - 1, 1 - n})) > 0]
-#     bishops_corner = [(a, b) for a in bishop_1 for b in bishop_2 if a[0] == b[0] and a[0] in {n, -n} or a[1] == b[1] and a[1] in {n, -n}]
-#
-#     knight = [(a, b) for a in range(3, n + 7) for b in range(-2 * n, 2 * n + 1) if l1_norm((a, b)) <= n + 3]
-#
-#     edge_king_coordinates = [(a, b) for a in range(1, n + 2) for b in range(-n - 1, n + 2) if n - 3 <= l1_norm((a, b)) <= n]
-#     center_king_coordinates = [(a, b) for a in range(1, n + 2) for b in range(-n - 1, n + 2) if l1_norm((a, b)) < n - 3]
-#
-#     potential_trap_positions = {(a, b) + c for a in center_king_coordinates for b in knight for c in bishops_corner if dist(a, b, knight_norm) < 2.5}
-#     potential_trap_positions.update({(a, b) + c for a in edge_king_coordinates for b in knight for c in all_bishops if dist(a, b, knight_norm) < 2.5})
-#
-#     return potential_trap_positions
-
 
 PIECES = [BLACK_KING] + [KNIGHT, BISHOP, BISHOP]  # first entry must always be Black king
 BLACK_KING_INDEX = 0
@@ -586,14 +639,15 @@ CORNER_MODE = False
 CORNER_BOUND = None
 if __name__ == "__main__":
     print(*[pp.symbol for pp in PIECES])
-    # play_vs_trap(load_trap("kNBB_20_3_2.5_23.txt"), 23, box_size=24)
-    n = 20
-    move_bound = n+2
-    edge_size = 3
-    knight_bound = 2.5
-    print(n)
-    trap = load_trap("kNBB_20_3_2.5_23.txt")
-    play_vs_trap(trap, move_bound, box_size=(n+1))
+    play_vs_trap(load_trap("kNBB_20_3_2.5_23.txt"), 22, box_size=21)
+    # n = 7
+    # move_bound = n+2
+    # edge_size = 3
+    # knight_bound = 2.5
+    # print(n)
+    # r = get_potential_NHa_traps(n)
+    # r = find_maximal_inescapable_tempo_gaining_trap(r, n + 2, True)
+
 
     # potential_trap_positions = get_potential_nbb_traps(n, edge_size=edge_size, knight_bound=knight_bound)
     # print(len(potential_trap_positions))
