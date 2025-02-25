@@ -316,15 +316,16 @@ def get_wins(winning_positions, move_bound, pos_score=None, should_print_variati
     #     print_position(p)
     i = 1
     while len(unexplored) > 0:
-        forceable_position = ((2, 0), (-1, 2), (3, 0), (-3,0))
-        print_position(forceable_position)
-        if forceable_position in white_wins:
-            print("White to move is a win!")
-            print_variations(forceable_position, white_wins, black_wins, move_bound, black_to_move=False, white_can_pass=white_can_pass)
-            print(i)
-        if forceable_position in black_wins:
-            print("Black to move is a win!")
-            print_variations(forceable_position, white_wins, black_wins, move_bound, black_to_move=True, white_can_pass=white_can_pass)
+        # TODO make this an argument or something.
+        # forceable_position = ((2, 0), (-1, 2), (3, 0), (-3,0))
+        # print_position(forceable_position)
+        # if forceable_position in white_wins:
+        #     print("White to move is a win!")
+        #     print_variations(forceable_position, white_wins, black_wins, move_bound, black_to_move=False, white_can_pass=white_can_pass)
+        #     print(i)
+        # if forceable_position in black_wins:
+        #     print("Black to move is a win!")
+        #     print_variations(forceable_position, white_wins, black_wins, move_bound, black_to_move=True, white_can_pass=white_can_pass)
     #   print(i)
         new_wins = {}
         if i % 2 == 0:  # Black just moved
@@ -343,11 +344,12 @@ def get_wins(winning_positions, move_bound, pos_score=None, should_print_variati
             #     for p in new_wins:
             #         print_position(p)
             #     print("-"*80)
-            pos_to_print = get_best_position(new_wins, pos_score) if pos_score is not None else random.choice(list(new_wins.keys()))
-            if should_print_variations:
-                print_variations(pos_to_print, white_wins, black_wins, move_bound, black_to_move=True, white_can_pass=white_can_pass)
-            else:
-                print_position(pos_to_print)
+            if len(new_wins) > 0:
+                pos_to_print = get_best_position(new_wins, pos_score) if pos_score is not None else random.choice(list(new_wins.keys()))
+                if should_print_variations:
+                    print_variations(pos_to_print, white_wins, black_wins, move_bound, black_to_move=True, white_can_pass=white_can_pass)
+                else:
+                    print_position(pos_to_print)
         else:  # White just moved
             for p in unexplored:
                 for q in get_white_preimages(p, move_bound, white_can_pass):
@@ -364,9 +366,9 @@ def get_wins(winning_positions, move_bound, pos_score=None, should_print_variati
         i += 1
 
 
-PIECES = [KING, ROOK, BISHOP, BISHOP]
+PIECES = [KING, ARCHBISHOP, HAWK]
 if __name__ == "__main__":
-
+    get_wins(get_mates_faster(10), 10, white_can_pass=True, pos_score=None, should_print_variations=False)
 
     # three_bishops_one_knight_traps = [((1, 0), (-1, 2), (-3, -2), (-1, 0)), ((2, -1), (0, 1), (-2, -3), (0, -1)), ((2, 1), (0, 3), (-2, -1), (0, 1)), ((3, 0), (1, 2), (-1, -2), (1, 0))]
 
@@ -374,5 +376,5 @@ if __name__ == "__main__":
         return min(abs(position[3][0])/3 + abs(position[3][1])/3, max(abs(position[3][0]), abs(position[3][1]))/2) if position[0] is not None else 0
     # get_wins(rotations_and_reflections(rotations_and_reflections(traps)), 10, pos_score=score, should_print_variations=False)
     # get_wins(rotations_and_reflections(three_bishops_one_knight_traps), 10, pos_score=score, should_print_variations=False)
-    get_wins(get_mates_faster(10, parity_condition=lambda x: pieces_same_color(x[2], x[3])), 5, pos_score=None, should_print_variations=False, white_can_pass=False)
+    # get_wins(get_mates_faster(10, parity_condition=lambda x: pieces_same_color(x[2], x[3])), 5, pos_score=None, should_print_variations=False, white_can_pass=False)
     # get_wins(rotations_and_reflections({((-1, -1), (2, -1), (-1, 3)), ((-1, -1), (2, -1), (-1, -3)), ((0, -1), (3, -1), (-4, -2))}), 20, pos_score=score, should_print_variations=False)
