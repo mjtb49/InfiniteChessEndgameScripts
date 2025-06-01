@@ -105,16 +105,16 @@ class PieceType:
             return []
         moves = [] if not passing else [board]
         for v in self.jumpers:
-            new_pieces = move_on_board(board, index, v)
+            new_pieces = move_on_board(board, index, (-v[0], -v[1]))
             if new_pieces[index] not in board:
                 moves.append(new_pieces)
         for v in self.riders:
             k = 1
-            new_pieces = move_on_board(board, index, v)
+            new_pieces = move_on_board(board, index, (-v[0], -v[1]))
             while new_pieces[index] not in board and k <= move_bound:
                 k += 1
                 moves.append(new_pieces)
-                new_pieces = move_on_board(new_pieces, index, v)
+                new_pieces = move_on_board(new_pieces, index, (-v[0], -v[1]))
 
         # undo potential captures.
         preimages_of_captures = []
@@ -149,7 +149,7 @@ BLACK_KING = PieceType("k", jumpers=[(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (
 GUARD = PieceType("G", jumpers=[(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, 1), (-1, -1), (1, -1)])
 HAWK = PieceType("H", jumpers=[(2, 0), (-2, 0), (0, 2), (0, -2), (2, 2), (-2, 2), (-2, -2), (2, -2),
                                (3, 0), (-3, 0), (0, 3), (0, -3), (3, 3), (-3, 3), (-3, -3), (3, -3)])
-
+CENTAUR = PieceType("C", jumpers=(KING.jumpers | KNIGHT.jumpers))
 
 def get_white_moves(board, move_bound, white_pass):
     result = set()
@@ -512,6 +512,11 @@ def play_vs_trap(trap, move_bound,box_size=10):
                 print("Legal directions are",*list(input_to_vec.keys()))
 
 
+def get_potential_C_traps(n):
+    coordinates = [(a, b) for a in range(-n-1, n+2) for b in range(-n, n+2)]
+    potential_trap_positions = {((a,b), c) for c in coordinates for a in range(-n-1, n+2) for b in range(-n, n+2)}
+    return potential_trap_positions
+
 def get_potential_ArHa_traps(n):
     coordinates1 = [(n, 0), (-n, 0), (0, n), (0, -n)]
     coordinates2 = [(a, b) for a in range(-n-1, n+2) for b in range(-n, n+2) if l1_norm((a, b)) <= n+7]
@@ -632,14 +637,18 @@ def load_trap(path):
         return ast.literal_eval(f.read())
 
 
-PIECES = [BLACK_KING] + [KNIGHT, BISHOP, BISHOP]  # first entry must always be Black king
+PIECES = [BLACK_KING] + [CENTAUR]  # first entry must always be Black king
 BLACK_KING_INDEX = 0
 WHITE_KING_INDEX = None
 CORNER_MODE = False
 CORNER_BOUND = None
 if __name__ == "__main__":
     print(*[pp.symbol for pp in PIECES])
-    play_vs_trap(load_trap("kNBB_20_3_2.5_23.txt"), 22, box_size=21)
+
+    r = get_potential_C_traps(20)
+    r = find_maximal_inescapable_trap(r, 10, True)
+
+    # play_vs_trap(load_trap("kNBB_20_3_2.5_23.txt"), 22, box_size=21)
     # n = 7
     # move_bound = n+2
     # edge_size = 3

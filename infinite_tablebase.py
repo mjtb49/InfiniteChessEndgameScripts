@@ -94,6 +94,34 @@ class PieceType:
                 new_pieces = move_on_board(new_pieces, index, v)
         return moves
 
+    def get_preimages(self, board, index, move_bound):
+        if board[index] is None:
+            return []
+        if PIECES[index].is_pawn:
+            result = []
+            if board[index] is not None:
+                for v in PIECES[index].jumpers:
+                    new_board = move_on_board(board, index, (-v[0], -v[1]))
+                    if not new_board[index] in board:
+                        result.append(new_board)
+            return result
+        moves = []
+        for v in self.jumpers:
+            new_board = move_on_board(board, index, (-v[0], -v[1]))
+            # TODO with black pieces we need to check check and captures.
+            if not new_board[index] in board:
+                if (not self.is_royal) or (new_board[index] not in KING_THREATENS):
+                    moves.append(new_board)
+        for v in self.riders:
+            k = 1
+            new_pieces = move_on_board(board, index, (-v[0], -v[1]))
+            while new_pieces[index] not in board and k < min(self.rider_bound, move_bound):
+                k += 1
+                if (not self.is_royal) or (new_pieces[index] not in KING_THREATENS):
+                    moves.append(new_pieces)
+                new_pieces = move_on_board(new_pieces, index, (-v[0], -v[1]))
+        return moves
+
 
 CHANCELLOR = PieceType("C", riders=[(1, 0), (-1, 0), (0, 1), (0, -1)],
                        jumpers=[(1, 2), (-1, 2), (2, 1), (2, -1), (1, -2), (-1, -2), (-2, 1), (-2, -1)])
@@ -111,6 +139,13 @@ KING = PieceType("K", jumpers=[(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, 1)
 GUARD = PieceType("G", jumpers=[(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, 1), (-1, -1), (1, -1)])
 HAWK = PieceType("H", jumpers=[(2, 0), (-2, 0), (0, 2), (0, -2), (2, 2), (-2, 2), (-2, -2), (2, -2),
                                (3, 0), (-3, 0), (0, 3), (0, -3), (3, 3), (-3, 3), (-3, -3), (3, -3)])
+MATING_PIECE = PieceType("M", jumpers=[(2, -2), (-2, -2),
+                                        (-1, 1), (-1, 2), (-1, 3),
+                                        (0, 1), (0, 2), (0, 3),
+                                        (1, 1), (1, 2), (1, 3),
+                                       ])
+CENTAUR = PieceType("C", jumpers=(KING.jumpers | KNIGHT.jumpers))
+DOUBLE_KING = PieceType("Z", jumpers=(KNIGHT.jumpers), riders=KING.jumpers, rider_bound=2)
 PAWN = PieceType("P", jumpers=[(-1, 0)], is_pawn=True)
 
 
@@ -124,14 +159,7 @@ def get_white_moves(board, move_bound, can_pass=False):
 def get_white_preimages(board, move_bound, can_pass=False):
     result = [board] if can_pass else []
     for i in range(len(PIECES)):
-        if PIECES[i].is_pawn:
-            if board[i] is not None:
-                for v in PIECES[i].jumpers:
-                    new_board = move_on_board(board, i, (-v[0], -v[1]))
-                    if not new_board[i] in board:
-                        result.append(new_board)
-        else:
-            result += PIECES[i].get_resulting_board_states(board, i, move_bound)
+        result += PIECES[i].get_preimages(board, i, move_bound)
 
     return [w for w in result if KING_SQUARE not in w and not is_threatened(KING_SQUARE, w)]
 
@@ -328,6 +356,8 @@ def get_wins(winning_positions, move_bound, pos_score=None, should_print_variati
         #     print_variations(forceable_position, white_wins, black_wins, move_bound, black_to_move=True, white_can_pass=white_can_pass)
     #   print(i)
         new_wins = {}
+        if i == 1000:
+            return
         if i % 2 == 0:  # Black just moved
             for p in unexplored:
                 for q in get_black_preimages(p):
@@ -366,15 +396,16 @@ def get_wins(winning_positions, move_bound, pos_score=None, should_print_variati
         i += 1
 
 
-PIECES = [KING, ARCHBISHOP, HAWK]
+PIECES = [MATING_PIECE]
 if __name__ == "__main__":
-    get_wins(get_mates_faster(10), 10, white_can_pass=True, pos_score=None, should_print_variations=False)
+    def score(position):
+        return -max(position[i][1] if position[i] is not None else 0 for i in range(len(PIECES)))
+    print(get_mates_faster(10))
+    get_wins(get_mates_faster(10), 10, white_can_pass=False, pos_score=score, should_print_variations=False)
 
     # three_bishops_one_knight_traps = [((1, 0), (-1, 2), (-3, -2), (-1, 0)), ((2, -1), (0, 1), (-2, -3), (0, -1)), ((2, 1), (0, 3), (-2, -1), (0, 1)), ((3, 0), (1, 2), (-1, -2), (1, 0))]
 
-    def score(position):
-        return min(abs(position[3][0])/3 + abs(position[3][1])/3, max(abs(position[3][0]), abs(position[3][1]))/2) if position[0] is not None else 0
-    # get_wins(rotations_and_reflections(rotations_and_reflections(traps)), 10, pos_score=score, should_print_variations=False)
+        # get_wins(rotations_and_reflections(rotations_and_reflections(traps)), 10, pos_score=score, should_print_variations=False)
     # get_wins(rotations_and_reflections(three_bishops_one_knight_traps), 10, pos_score=score, should_print_variations=False)
     # get_wins(get_mates_faster(10, parity_condition=lambda x: pieces_same_color(x[2], x[3])), 5, pos_score=None, should_print_variations=False, white_can_pass=False)
     # get_wins(rotations_and_reflections({((-1, -1), (2, -1), (-1, 3)), ((-1, -1), (2, -1), (-1, -3)), ((0, -1), (3, -1), (-4, -2))}), 20, pos_score=score, should_print_variations=False)
