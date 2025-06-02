@@ -356,8 +356,6 @@ def get_wins(winning_positions, move_bound, pos_score=None, should_print_variati
         #     print_variations(forceable_position, white_wins, black_wins, move_bound, black_to_move=True, white_can_pass=white_can_pass)
     #   print(i)
         new_wins = {}
-        if i == 1000:
-            return
         if i % 2 == 0:  # Black just moved
             for p in unexplored:
                 for q in get_black_preimages(p):
